@@ -81,6 +81,8 @@ class StdioServer:
         self._stdout_lines = 0
         self._lock = threading.Lock()
         self._legacy_replies = False
+        self.stdout_closed = False
+        self.write_failed = False
 
     # ---------------------------------------------------------------- lifecycle
     def start(self) -> bool:
@@ -139,7 +141,9 @@ class StdioServer:
                 pass
 
     def alive(self) -> bool:
-        return self.proc is not None and self.proc.poll() is None
+        """Still running and still connected: a server whose stdout hit EOF is gone
+        for any client, even if the OS has not reaped the process yet."""
+        return self.proc is not None and self.proc.poll() is None and not (self.stdout_closed or self.write_failed)
 
     # ---------------------------------------------------------------- readers
     def _read_stdout(self) -> None:
@@ -165,6 +169,7 @@ class StdioServer:
                 self.noise.append((n, text))
                 continue
             self.events.put(Event("message", msg, n, now))
+        self.stdout_closed = True
         self.events.put(Event("eof", None, self._stdout_lines, time.monotonic()))
 
     def _read_stderr(self) -> None:
@@ -185,6 +190,7 @@ class StdioServer:
                 self.proc.stdin.flush()
             return True
         except (OSError, ValueError):
+            self.write_failed = True  # broken pipe: the server is gone
             return False
 
     def notify(self, method: str, params: dict[str, Any] | None = None) -> None:
