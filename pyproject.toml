@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcpprobe"
+version = "0.1.0"
+description = "Probe a stdio MCP server the way MCP 2026-07-28 (server/discover) and 2025-11-25 (initialize) clients connect: protocol era, stdout noise, cache hints, tool shape, unknown-method and shutdown behaviour."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Celalettin Durğaç" }]
+requires-python = ">=3.10"
+dependencies = []
+keywords = ["mcp", "model-context-protocol", "ai-agents", "stdio", "json-rpc", "cli", "testing"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Environment :: Console",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.urls]
+Homepage = "https://github.com/celaldrg/mcpprobe"
+Issues = "https://github.com/celaldrg/mcpprobe/issues"
+
+[project.scripts]
+mcpprobe = "mcpprobe.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

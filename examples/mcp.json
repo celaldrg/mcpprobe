@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "weather": {
+      "command": "python",
+      "args": ["servers/weather_dual.py"]
+    },
+    "notes": {
+      "command": "python",
+      "args": ["servers/notes_legacy.py"]
+    },
+    "files": {
+      "command": "python",
+      "args": ["servers/files_modern.py"],
+      "env": { "FILES_ROOT": "${FILES_ROOT:-/tmp}" }
+    },
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
+    }
+  }
+}
