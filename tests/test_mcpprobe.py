@@ -270,6 +270,17 @@ class Cli(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("no server named nope", err)
 
+    def test_cp1252_console(self):
+        import subprocess
+        env = dict(os.environ, PYTHONIOENCODING="cp1252", PYTHONPATH=os.path.join(ROOT, "src"))
+        env.pop("PYTHONUTF8", None)
+        p = subprocess.run([PY, "-m", "mcpprobe", "--no-color", "--", *server("weather_dual.py")],
+                           capture_output=True, env=env, timeout=60)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        out = p.stdout.decode("cp1252")
+        self.assertIn("* ", out)
+        self.assertIn("ok no problems", out)
+
     def test_strict(self):
         path = script("""
             import json, sys

@@ -216,8 +216,33 @@ def render(rep: Report, o: Opts, st: Style, width: int) -> str:
     return "\n".join(out)
 
 
+ASCII = str.maketrans({"●": "*", "✓": "ok", "✗": "x", "·": "|", "…": "...", "→": "->"})
+
+
+def unicode_ok(stream: Any) -> bool:
+    """False on consoles that cannot print the report glyphs (e.g. cp1252 on Windows)."""
+    enc = getattr(stream, "encoding", None)
+    if not enc:
+        return True
+    try:
+        "●✓✗·…".encode(enc)
+        return True
+    except (UnicodeEncodeError, LookupError):
+        return False
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")  # type: ignore[union-attr]
+        except (AttributeError, ValueError):
+            pass
+    fancy = unicode_ok(sys.stdout)
+
+    def emit(text: str = "", **kw: Any) -> None:
+        print(text if fancy else text.translate(ASCII), **kw)
+
     try:
         o = parse(argv)
     except UsageError as exc:
@@ -263,8 +288,8 @@ def main(argv: list[str] | None = None) -> int:
         reports.append(rep)
         if not o.json:
             if i:
-                print()
-            print(render(rep, o, st, width), flush=True)
+                emit()
+            emit(render(rep, o, st, width), flush=True)
 
     probed = [r for r in reports if not r.skipped]
     errors = sum(r.count(ERROR) for r in probed)
@@ -272,15 +297,15 @@ def main(argv: list[str] | None = None) -> int:
     if o.json:
         doc: dict[str, Any] = {"version": __version__, "servers": [r.to_dict() for r in reports],
                                "errors": errors, "warnings": warnings}
-        print(json.dumps(doc, indent=2, ensure_ascii=False))
+        print(json.dumps(doc, indent=2, ensure_ascii=not fancy))
     elif len(reports) > 1:
         eras: dict[str, int] = {}
         for r in probed:
             eras[r.era] = eras.get(r.era, 0) + 1
         mix = ", ".join(f"{n} {e}" for e, n in eras.items())
         skipped = len(reports) - len(probed)
-        print()
-        print(st.bold(f"{plural(len(probed), 'server')} probed") + (f" ({mix})" if mix else "")
+        emit()
+        emit(st.bold(f"{plural(len(probed), 'server')} probed") + (f" ({mix})" if mix else "")
               + (st.dim(f", {skipped} skipped") if skipped else "")
               + f" · {plural(errors, 'error')} · {plural(warnings, 'warning')}")
     if not probed:
